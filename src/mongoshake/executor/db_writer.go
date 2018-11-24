@@ -1,16 +1,16 @@
 package executor
 
-import(
+import (
 	"fmt"
 	"strings"
 
+	"mongoshake/collector/configure" //xqw_write
 	"mongoshake/common"
-	"mongoshake/collector/configure"
 	"mongoshake/oplog"
 
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo"
 	"github.com/vinllen/mgo/bson"
-	LOG "github.com/vinllen/log4go"
 )
 
 const (
@@ -54,7 +54,7 @@ type CommandWriter struct {
 }
 
 func (cw *CommandWriter) doInsert(database, collection string, metadata bson.M, oplogs []*OplogRecord,
-		dupUpdate bool) error {
+	dupUpdate bool) error {
 	var inserts []bson.M
 	for _, log := range oplogs {
 		inserts = append(inserts, log.original.partialLog.Object)
@@ -86,7 +86,7 @@ func (cw *CommandWriter) doInsert(database, collection string, metadata bson.M, 
 }
 
 func (cw *CommandWriter) doUpdateOnInsert(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord, upsert bool) error {
+	oplogs []*OplogRecord, upsert bool) error {
 	var updates []bson.M
 	for _, log := range oplogs {
 		// insert must have _id
@@ -122,7 +122,7 @@ func (cw *CommandWriter) doUpdateOnInsert(database, collection string, metadata 
 }
 
 func (cw *CommandWriter) doUpdate(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord, upsert bool) error {
+	oplogs []*OplogRecord, upsert bool) error {
 	var updates []bson.M
 	for _, log := range oplogs {
 		updates = append(updates, bson.M{
@@ -155,7 +155,7 @@ func (cw *CommandWriter) doUpdate(database, collection string, metadata bson.M,
 }
 
 func (cw *CommandWriter) doDelete(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord) error {
+	oplogs []*OplogRecord) error {
 	var deleted []bson.M
 	var err error
 	for _, log := range oplogs {
@@ -233,7 +233,7 @@ type BulkWriter struct {
 }
 
 func (bw *BulkWriter) doInsert(database, collection string, metadata bson.M, oplogs []*OplogRecord,
-		dupUpdate bool) error {
+	dupUpdate bool) error {
 	var inserts []interface{}
 	for _, log := range oplogs {
 		inserts = append(inserts, log.original.partialLog.Object)
@@ -258,7 +258,7 @@ func (bw *BulkWriter) doInsert(database, collection string, metadata bson.M, opl
 }
 
 func (bw *BulkWriter) doUpdateOnInsert(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord, upsert bool) error {
+	oplogs []*OplogRecord, upsert bool) error {
 	var update []interface{}
 	for _, log := range oplogs {
 		// insert must have _id
@@ -286,7 +286,7 @@ func (bw *BulkWriter) doUpdateOnInsert(database, collection string, metadata bso
 }
 
 func (bw *BulkWriter) doUpdate(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord, upsert bool) error {
+	oplogs []*OplogRecord, upsert bool) error {
 	var update []interface{}
 	for _, log := range oplogs {
 		oFiled := log.original.partialLog.Object
@@ -315,7 +315,7 @@ func (bw *BulkWriter) doUpdate(database, collection string, metadata bson.M,
 }
 
 func (bw *BulkWriter) doDelete(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord) error {
+	oplogs []*OplogRecord) error {
 	var delete []interface{}
 	for _, log := range oplogs {
 		delete = append(delete, log.original.partialLog.Object)
@@ -394,7 +394,7 @@ type SingleWriter struct {
 }
 
 func (sw *SingleWriter) doInsert(database, collection string, metadata bson.M, oplogs []*OplogRecord,
-		dupUpdate bool) error {
+	dupUpdate bool) error {
 	collectionHandle := sw.session.DB(database).C(collection)
 	var upserts []*OplogRecord
 	var errMsgs []string
@@ -469,7 +469,7 @@ func (sw *SingleWriter) doUpdateOnInsert(database, collection string, metadata b
 }
 
 func (sw *SingleWriter) doUpdate(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord, upsert bool) error {
+	oplogs []*OplogRecord, upsert bool) error {
 	collectionHandle := sw.session.DB(database).C(collection)
 	var errMsgs []string
 	if upsert {
@@ -520,7 +520,7 @@ func (sw *SingleWriter) doUpdate(database, collection string, metadata bson.M,
 }
 
 func (sw *SingleWriter) doDelete(database, collection string, metadata bson.M,
-		oplogs []*OplogRecord) error {
+	oplogs []*OplogRecord) error {
 	collectionHandle := sw.session.DB(database).C(collection)
 	var errMsgs []string
 	for _, log := range oplogs {

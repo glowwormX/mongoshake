@@ -8,6 +8,14 @@ type Configuration struct {
 	LogFileName   string `config:"log_file"`
 	LogBuffer     bool   `config:"log_buffer"`
 	ReplayerNum   int    `config:"replayer"`
+
+	ReplayerDMLOnly                   bool   `config:"replayer.dml_only"`
+	ReplayerExecutor                  int    `config:"replayer.executor"`
+	ReplayerExecutorUpsert            bool   `config:"replayer.executor.upsert"`
+	ReplayerExecutorInsertOnDupUpdate bool   `config:"replayer.executor.insert_on_dup_update"`
+	ReplayerCollisionEnable           bool   `config:"replayer.collision_detection"`
+	ReplayerConflictWriteTo           string `config:"replayer.conflict_write_to"`
+	ReplayerDurable                   bool   `config:"replayer.durable"`
 }
 
 var Options Configuration

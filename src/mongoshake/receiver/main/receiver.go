@@ -1,31 +1,32 @@
 // this is an receiver example connect to different tunnels
 package main
 
-import(
+import (
+	"errors"
 	"flag"
 	"fmt"
-	"os"
-
-	"mongoshake/common"
-	"mongoshake/receiver/configure"
-	"mongoshake/tunnel"
-
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
-	"errors"
-	"syscall"
+	LOG "github.com/vinllen/log4go"
+	"mongoshake/collector/configure"
+	"mongoshake/common"
 	"mongoshake/receiver"
+	"mongoshake/tunnel"
+	"os"
+	"syscall"
 )
 
-type Exit struct {Code int}
+type Exit struct{ Code int }
 
 func main() {
 	var err error
 	defer handleExit()
 	defer LOG.Close()
 
+	//./bin/receiver -conf=conf/receiver.conf
 	// argument options
-	configuration := flag.String("conf", "", "configure file absolute path")
+	//configuration := flag.String("conf", "", "configure file absolute path")
+	str := "/home/hlkj/go/conf/receiver.conf"
+	configuration := &str
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	flag.Parse()
 
@@ -59,7 +60,7 @@ func main() {
 
 	startup()
 
-	select{}
+	select {}
 }
 
 func sanitizeOptions() error {
@@ -75,7 +76,7 @@ func sanitizeOptions() error {
 // this is the main connector function
 func startup() {
 	factory := tunnel.ReaderFactory{Name: conf.Options.Tunnel}
-	reader := factory.Create(conf.Options.TunnelAddress)
+	reader := factory.Create(conf.Options.TunnelAddress[0])
 	if reader == nil {
 		return
 	}
@@ -87,7 +88,54 @@ func startup() {
 	 */
 	repList := make([]tunnel.Replayer, conf.Options.ReplayerNum)
 	for i := range repList {
-		repList[i] = replayer.NewExampleReplayer()
+		repList[i] = replayer.NewExampleReplayer(0)
+	}
+
+	LOG.Info("receiver is starting...")
+	if err := reader.Link(repList); err != nil {
+		LOG.Critical("Replayer link to tunnel error %v", err)
+		return
+	}
+}
+
+//func startup() {
+//	go func() {
+//		for {
+//			read := time.After(time.Second * 5) //xqw_time
+//			filepath.Walk(conf.Options.TunnelAddress[0], func(path string, f os.FileInfo, err error) error {
+//				if (f == nil) {
+//					return err
+//				}
+//				if f.IsDir() {
+//					return nil
+//				}
+//				startupOld(path)
+//				return nil
+//			})
+//			LOG.Info("File read")
+//			<-read
+//		}
+//	}()
+//}
+
+// this is the main connector function
+func startupOld(filepath string) {
+	factory := tunnel.ReaderFactory{Name: conf.Options.Tunnel}
+
+	reader := factory.Create(filepath)
+	if reader == nil {
+		return
+	}
+
+	/*
+	 * create re-players, the number of re-players number is equal to the
+	 * collector worker number to fulfill load balance. The tunnel that message
+	 * sent to is determined in the collector side: `TMessage.Shard`.
+	 */
+	repList := make([]tunnel.Replayer, conf.Options.ReplayerNum)
+	for i := range repList {
+		//接受数据后操作
+		repList[i] = replayer.NewExampleReplayer(uint32(i))
 	}
 
 	LOG.Info("receiver is starting...")

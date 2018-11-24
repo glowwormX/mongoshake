@@ -32,6 +32,10 @@ type Configuration struct {
 	ReplayerCollisionEnable           bool   `config:"replayer.collision_detection"`
 	ReplayerConflictWriteTo           string `config:"replayer.conflict_write_to"`
 	ReplayerDurable                   bool   `config:"replayer.durable"`
+
+	ReplayerNum         int      `config:"replayer"`
+	TunnelWriter        string   `config:"tunnel.writer"`
+	TunnelAddressWriter []string `config:"tunnel.writer.address"`
 }
 
 func (configuration *Configuration) IsShardCluster() bool {

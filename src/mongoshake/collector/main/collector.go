@@ -16,12 +16,12 @@ import (
 	"mongoshake/oplog"
 	"mongoshake/quorum"
 
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo/bson"
 )
 
-type Exit struct {Code int}
+type Exit struct{ Code int }
 
 func main() {
 	var err error
@@ -29,8 +29,12 @@ func main() {
 	defer LOG.Close()
 	defer utils.Goodbye()
 
+	//./bin/collector -conf=conf/collector.conf
 	// argument options
-	configuration := flag.String("conf", "", "configure file absolute path")
+	//configuration := flag.String("conf", "", "configure file absolute path")
+	//var configuration *string
+	str := "/home/hlkj/go/conf/collector.conf"
+	configuration := &str
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
@@ -75,7 +79,7 @@ func main() {
 }
 
 func startup() {
-	// leader election at the beginning
+	// leader election at the beginningr
 	selectLeader()
 
 	// initialize http api

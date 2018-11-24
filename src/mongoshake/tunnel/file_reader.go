@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	LOG "github.com/vinllen/log4go"
 	"io"
 	"os"
-
-	LOG "github.com/vinllen/log4go"
+	"path/filepath"
+	"time"
 )
 
 type FileReader struct {
@@ -27,20 +28,42 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 		go tunnel.consume(ch)
 	}
 
-	var file *os.File
-	var err error
-	if file, err = os.Open(tunnel.File); err != nil {
-		LOG.Critical("File tunnel reader open %s failed, %v", tunnel.File, err)
-		return err
-	}
-	tunnel.dataFile = &DataFile{filehandle: file}
+	//TODO 在这里根据文件夹里的文件数开线程
 
-	if fileHeader := tunnel.dataFile.ReadHeader(); fileHeader.Magic != FILE_MAGIC_NUMBER || fileHeader.Protocol != FILE_PROTOCOL_NUMBER {
-		LOG.Critical("File is not belong to mongoshake. magic header or protocol header is invalid")
-		return errors.New("file magic number or protocol number is invalid")
-	}
+	go func() {
+		for {
+			read := time.After(time.Second * 5) //xqw_time
+			filepath.Walk(tunnel.File, func(path string, f os.FileInfo, err error) error {
+				if f == nil {
+					return err
+				}
+				if f.IsDir() {
+					return nil
+				}
 
-	go tunnel.read()
+				var file *os.File
+				var er error
+				if file, er = os.Open(path); er != nil {
+					LOG.Critical("File tunnel reader open %s failed, %v", tunnel.File, err)
+					return er
+				}
+				dataFile := &DataFile{filehandle: file}
+
+				if fileHeader := dataFile.ReadHeader(); fileHeader.Magic != FILE_MAGIC_NUMBER || fileHeader.Protocol != FILE_PROTOCOL_NUMBER {
+					LOG.Critical("File is not belong to mongoshake. magic header or protocol header is invalid")
+					return errors.New("file magic number or protocol number is invalid")
+				}
+
+				go tunnel.read(dataFile.filehandle)
+
+				os.RemoveAll(path)
+
+				return nil
+			})
+			LOG.Info("File read")
+			<-read
+		}
+	}()
 
 	return nil
 }
@@ -71,10 +94,10 @@ func (tunnel *FileReader) consume(pipe <-chan *TMessage) {
 	}
 }
 
-func (tunnel *FileReader) read() {
-	defer tunnel.dataFile.filehandle.Close()
+func (tunnel *FileReader) read(filehandle *os.File) {
+	defer filehandle.Close()
 
-	bufferedReader := tunnel.dataFile.filehandle
+	bufferedReader := filehandle
 	bits := make([]byte, 4, 4)
 	totalLogs := 0
 	for {
@@ -134,4 +157,5 @@ func (tunnel *FileReader) read() {
 		LOG.Info("File tunnel reader extract oplogs with shard[%d], compressor[%d], count (%d)", message.Shard, message.Compress, len(message.RawLogs))
 	}
 	LOG.Info("File tunnel reader complete. total oplogs %d", totalLogs)
+
 }

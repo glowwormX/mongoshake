@@ -104,5 +104,6 @@
 			"revision": "a7c533673f5d3cc284f8636b2fc74a04ef788e1f",
 			"revisionTime": "2018-09-17T12:27:30Z"
 		}
-	]
+	],
+	"rootPath": "mongo-shake/src"
 }
