@@ -162,9 +162,11 @@ func (tunnel *FileWriter) PrepareOld() bool {
 	return true
 }
 
-func (tunnel *FileWriter) PrepareOldNoThread() bool {
+func (tunnel *FileWriter) replaceNewFile() bool {
+	var dataFile *DataFile
+	oldFile := tunnel.dataFile
 	if file, ok := _Open(tunnel.Local); ok {
-		tunnel.dataFile = &DataFile{filehandle: file}
+		dataFile = &DataFile{filehandle: file}
 	} else {
 		LOG.Critical("File tunnel open failed")
 		return false
@@ -174,8 +176,9 @@ func (tunnel *FileWriter) PrepareOldNoThread() bool {
 		LOG.Critical("File tunnel check path failed. %v", err)
 		return false
 	}
-	tunnel.dataFile.WriteHeader()
-
+	dataFile.WriteHeader()
+	tunnel.dataFile = dataFile
+	oldFile.filehandle.Close()
 	return true
 }
 
@@ -203,11 +206,11 @@ func (tunnel *FileWriter) Prepare() bool {
 func (tunnel *FileWriter) StartNext(lastFile string) {
 	for {
 		select {
-		case <-time.Tick(time.Second * 10): //xqw_time
+		case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //xqw_time
 			tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
-			tunnel.PrepareOldNoThread()
+			tunnel.replaceNewFile()
 
-			if er := os.Rename(lastFile, "syncMongo/"+lastFile); er != nil {
+			if er := os.Rename(lastFile, conf.Options.CopyLogFilePath+"/"+lastFile); er != nil {
 				LOG.Critical("copy fail name : d%", lastFile)
 				print(er)
 			}

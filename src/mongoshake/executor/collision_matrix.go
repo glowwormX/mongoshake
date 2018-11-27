@@ -8,8 +8,8 @@ import (
 
 	"mongoshake/oplog"
 
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo/bson"
 )
 
@@ -39,11 +39,20 @@ func (noop *NoopMatrix) split(logs []*PartialLogWithCallbak) [][]*PartialLogWith
 
 func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord {
 	records := make([]*OplogRecord, len(segment), len(segment))
-	for index, log := range segment {
+	rlen := 0
+	for _, log := range segment {
 		// nothing to change !
-		records[index] = &OplogRecord{original: log, wait: nil}
+		if log.partialLog.Object["go"] != true {
+			records[rlen] = &OplogRecord{original: log, wait: nil}
+			rlen++
+		}
 	}
-	return records
+	result := make([]*OplogRecord, rlen, rlen)
+	for i := 0; i < rlen; i++ {
+		result[i] = records[i]
+	}
+
+	return result
 }
 
 type OplogUniqueIdentifier struct {

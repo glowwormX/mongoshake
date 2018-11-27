@@ -85,6 +85,7 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 				err = dbWriter.doInsert(dc[0], dc[1], metadata, group.oplogRecords,
 					conf.Options.ReplayerExecutorInsertOnDupUpdate)
 			case "u":
+				//oplogRecords.append(obj)
 				err = dbWriter.doUpdate(dc[0], dc[1], metadata, group.oplogRecords,
 					conf.Options.ReplayerExecutorUpsert)
 			case "d":

@@ -36,6 +36,10 @@ type Configuration struct {
 	ReplayerNum         int      `config:"replayer"`
 	TunnelWriter        string   `config:"tunnel.writer"`
 	TunnelAddressWriter []string `config:"tunnel.writer.address"`
+
+	CopyLogFileTime uint   `config:"tunnel.file.copy.time"`
+	CopyLogFilePath string `config:"tunnel.file.copy.path"`
+	ReadLogFileTime uint   `config:"tunnel.writer.file.read.time"`
 }
 
 func (configuration *Configuration) IsShardCluster() bool {

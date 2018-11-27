@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"mongoshake/collector/configure"
 )
 
 type FileReader struct {
@@ -27,12 +29,10 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 		tunnel.pipe = append(tunnel.pipe, ch)
 		go tunnel.consume(ch)
 	}
-
-	//TODO 在这里根据文件夹里的文件数开线程
-
 	go func() {
 		for {
-			read := time.After(time.Second * 5) //xqw_time
+			read := time.After(time.Second * time.Duration(conf.Options.ReadLogFileTime)) //xqw_time
+			LOG.Info("Start reading file" + tunnel.File)
 			filepath.Walk(tunnel.File, func(path string, f os.FileInfo, err error) error {
 				if f == nil {
 					return err
@@ -57,10 +57,10 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 				go tunnel.read(dataFile.filehandle)
 
 				os.RemoveAll(path)
+				LOG.Info("File read complete, delete " + path)
 
 				return nil
 			})
-			LOG.Info("File read")
 			<-read
 		}
 	}()

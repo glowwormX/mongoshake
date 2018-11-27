@@ -24,9 +24,10 @@ func main() {
 
 	//./bin/receiver -conf=conf/receiver.conf
 	// argument options
-	//configuration := flag.String("conf", "", "configure file absolute path")
-	str := "/home/hlkj/go/conf/receiver.conf"
-	configuration := &str
+	configuration := flag.String("conf", "", "configure file absolute path")
+	//if(*configuration == "") {
+	//	*configuration = "/home/hlkj/go/conf/receiver.conf"
+	//}
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	flag.Parse()
 
