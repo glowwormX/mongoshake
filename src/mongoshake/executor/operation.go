@@ -1,9 +1,12 @@
 package executor
 
 import (
+	"container/list"
 	"errors"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	"mongoshake/collector/configure" //xqw_write
 	"mongoshake/common"
@@ -79,7 +82,17 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 			// exec.batchExecutor.ReplMetric.AddFilter(uint64(len(group.oplogRecords)))
 		} else {
 			// "0" -> database, "1" -> collection
+			list.New()
 			dc := strings.SplitN(group.ns, ".", 2)
+			for _, log := range group.oplogRecords {
+				setGoTag(log.original.partialLog.Object)
+
+				//LOG.Critical("myxqw op: %s ;\n namespace: s% ;\n o: %v ",
+				//	log.original.partialLog.Operation,
+				//	log.original.partialLog.Namespace,
+				//	log.original.partialLog.Object)
+			}
+
 			switch group.op {
 			case "i":
 				err = dbWriter.doInsert(dc[0], dc[1], metadata, group.oplogRecords,
@@ -125,6 +138,25 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 	//ns := group.logs[0].original.partialLog.Namespace
 	//exec.replayer.ReplMetric.AddTableOps(ns, count)
 	return nil
+}
+
+func setGoTag(m bson.M) {
+	//for k,v := range m{
+	//	setMap, ok := v.(bson.M)
+	//	if (ok) { //true
+	//		setGoTag(setMap)
+	//	}else{
+	//	}
+	//}
+	if m["$set"] != nil {
+		set := m["$set"]
+		setMap, ok := set.(bson.M)
+		if ok { //true
+			setGoTag(setMap)
+		}
+	} else {
+		m["__go"] = strconv.FormatInt(time.Now().UnixNano(), 16)
+	}
 }
 
 func (exec *Executor) errorIgnore(err error) bool {

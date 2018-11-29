@@ -475,7 +475,6 @@ func (sw *SingleWriter) doUpdate(database, collection string, metadata bson.M,
 	if upsert {
 		for _, log := range oplogs {
 			oFiled := log.original.partialLog.Object
-			oFiled["go"] = true
 			// we should handle the special case: "o" filed may include "$v" in mongo-3.6 which is not support in mgo.v2 library
 			if _, ok := oFiled[verisonMark]; ok {
 				delete(oFiled, verisonMark)

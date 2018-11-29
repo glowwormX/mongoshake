@@ -3,10 +3,9 @@ package executor
 import (
 	"bytes"
 	"fmt"
+	"mongoshake/oplog"
 	"reflect"
 	"strings"
-
-	"mongoshake/oplog"
 
 	"github.com/gugemichael/nimo4go"
 	LOG "github.com/vinllen/log4go"
@@ -42,7 +41,7 @@ func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord
 	rlen := 0
 	for _, log := range segment {
 		// nothing to change !
-		if log.partialLog.Object["go"] != true {
+		if !hasGoTag(log.partialLog.Object) {
 			records[rlen] = &OplogRecord{original: log, wait: nil}
 			rlen++
 		}
@@ -53,6 +52,21 @@ func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord
 	}
 
 	return result
+}
+
+func hasGoTag(m bson.M) bool {
+	if m["$set"] != nil {
+		set := m["$set"]
+		setMap, ok := set.(bson.M)
+		if ok {
+			return hasGoTag(setMap)
+		}
+	} else {
+		if m["__go"] != nil {
+			return true
+		}
+	}
+	return false
 }
 
 type OplogUniqueIdentifier struct {
