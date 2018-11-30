@@ -1,9 +1,9 @@
 package collector
 
 import (
-	"strings"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"mongoshake/common"
 	"mongoshake/oplog"
@@ -50,6 +50,9 @@ type AutologousFilter struct {
 func (filter *AutologousFilter) Filter(log *oplog.PartialLog) bool {
 	// for namespace. we filter noop operation and collection name
 	// that are admin, local, mongoshake, mongoshake_conflict
+	if strings.HasPrefix(log.Namespace, "admin.$cmd") && log.Object["applyOps"] != nil {
+		return false
+	}
 	for _, ignorePrefix := range NsShouldBeIgnore {
 		if strings.HasPrefix(log.Namespace, ignorePrefix) {
 			return true

@@ -10,8 +10,8 @@ import (
 	"mongoshake/oplog"
 	"mongoshake/quorum"
 
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo/bson"
 )
 
@@ -154,7 +154,6 @@ func (sync *OplogSyncer) start() {
 
 func (sync *OplogSyncer) startBatcher() {
 	var batcher = sync.batcher
-
 	nimo.GoRoutineInLoop(func() {
 		// As much as we can batch more from logs queue. batcher can merge
 		// a sort of oplogs from different logs queue one by one. the max number

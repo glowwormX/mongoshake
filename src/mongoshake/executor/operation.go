@@ -86,11 +86,6 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 			dc := strings.SplitN(group.ns, ".", 2)
 			for _, log := range group.oplogRecords {
 				setGoTag(log.original.partialLog.Object)
-
-				//LOG.Critical("myxqw op: %s ;\n namespace: s% ;\n o: %v ",
-				//	log.original.partialLog.Operation,
-				//	log.original.partialLog.Namespace,
-				//	log.original.partialLog.Object)
 			}
 
 			switch group.op {
@@ -141,13 +136,6 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 }
 
 func setGoTag(m bson.M) {
-	//for k,v := range m{
-	//	setMap, ok := v.(bson.M)
-	//	if (ok) { //true
-	//		setGoTag(setMap)
-	//	}else{
-	//	}
-	//}
 	if m["$set"] != nil {
 		set := m["$set"]
 		setMap, ok := set.(bson.M)

@@ -180,9 +180,27 @@ func (cw *CommandWriter) doCommand(database string, metadata bson.M, oplogs []*O
 	for _, log := range oplogs {
 		operation, found := extraCommandName(log.original.partialLog.Object)
 		if !conf.Options.ReplayerDMLOnly || (found && isSyncDataCommand(operation)) {
+			var logs []*oplog.PartialLog
+			if array, ok := log.original.partialLog.Object["applyOps"].([]interface{}); ok {
+				logs = make([]*oplog.PartialLog, len(array), len(array))
+				for i, ary := range array {
+					if applyOps, ok := ary.(bson.M); ok {
+						logs[i] = &oplog.PartialLog{
+							Timestamp: log.original.partialLog.Timestamp,
+							Operation: applyOps["op"].(string),
+							Namespace: applyOps["ns"].(string),
+							Object:    applyOps["o"].(bson.M),
+						}
+						if o2, ok := applyOps["o2"].(bson.M); ok {
+							logs[i].Query = o2
+						}
+					}
+				}
+			} else {
+				logs = []*oplog.PartialLog{log.original.partialLog}
+			}
 			// execute one by one with sequence order
-			if err = cw.applyOps(database, metadata, []*oplog.PartialLog{log.original.
-				partialLog}); err == nil {
+			if err = cw.applyOps(database, metadata, logs); err == nil {
 				LOG.Info("Execute command (op==c) oplog dml_only mode [%t], operation [%s]", conf.Options.ReplayerDMLOnly, operation)
 			} else {
 				return err
@@ -593,6 +611,44 @@ func (sw *SingleWriter) applyOps(database, operation string, log *oplog.PartialL
 		}
 		// call Run()
 		err = dbHandle.Run(store, nil)
+	case "applyOps":
+		if array, ok := log.Object["applyOps"].([]interface{}); ok {
+			for _, applyOps := range array {
+				if applyOps, ok := applyOps.(bson.M); ok {
+					if ms, ok := applyOps["o"].(bson.M); ok {
+						s := applyOps["ns"].(string)
+						dc := strings.SplitN(s, ".", 2)
+						setGoTag(ms)
+						log := &oplog.PartialLog{
+							Operation: applyOps["op"].(string),
+							Namespace: applyOps["ns"].(string),
+							Object:    applyOps["o"].(bson.M),
+						}
+						if o2, ok := applyOps["o2"].(bson.M); ok {
+							log.Query = o2
+						}
+						record := &OplogRecord{original: &PartialLogWithCallbak{partialLog: log}}
+						switch log.Operation {
+						case "i":
+							err = sw.doInsert(dc[0], dc[1], bson.M{}, []*OplogRecord{record},
+								conf.Options.ReplayerExecutorInsertOnDupUpdate)
+						case "u":
+							err = sw.doUpdate(dc[0], dc[1], bson.M{}, []*OplogRecord{record},
+								conf.Options.ReplayerExecutorUpsert)
+						case "d":
+							err = sw.doDelete(dc[0], dc[1], bson.M{}, []*OplogRecord{record})
+						case "c":
+							fallthrough
+						case "n":
+							fallthrough
+						default:
+							LOG.Info("applyOps meets type[%s] which is not implemented", operation)
+						}
+					}
+				}
+			}
+		}
+
 	default:
 		LOG.Info("applyOps meets type[%s] which is not implemented", operation)
 	}
