@@ -3,6 +3,7 @@ package tunnel
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -38,7 +39,8 @@ type FileWriter struct {
 	// data file header
 	fileHeader *FileHeader
 	// data file handle
-	dataFile *DataFile
+	dataFile       *DataFile
+	changeFileLock sync.Mutex
 
 	logs uint64
 }
@@ -121,8 +123,14 @@ func (tunnel *FileWriter) SyncToDisk() {
 			binary.Write(headerBuffer, binary.BigEndian, message.Compress)
 			binary.Write(headerBuffer, binary.BigEndian, uint32(0xeeeeeeee))
 			binary.Write(headerBuffer, binary.BigEndian, uint32(buffer.Len()))
+			//
+			fmt.Print("SyncToDisk changeFileLock lock \n")
+			tunnel.changeFileLock.Lock()
 			tunnel.dataFile.filehandle.Write(headerBuffer.Bytes())
 			tunnel.dataFile.filehandle.Write(buffer.Bytes())
+			tunnel.changeFileLock.Unlock()
+			fmt.Print("SyncToDisk changeFileLock unlock \n")
+
 			buffer.Reset()
 		case <-time.After(time.Millisecond * 1000):
 			LOG.Info("File tunnel sync flush. total oplogs %d", tunnel.logs)
@@ -177,7 +185,13 @@ func (tunnel *FileWriter) replaceNewFile() bool {
 		return false
 	}
 	dataFile.WriteHeader()
+	// Replace write file
+	fmt.Print("replaceNewFile() changeFileLock lock \n")
+	tunnel.changeFileLock.Lock()
 	tunnel.dataFile = dataFile
+	tunnel.changeFileLock.Unlock()
+	fmt.Print("replaceNewFile() changeFileLock unlock \n")
+
 	oldFile.filehandle.Close()
 	return true
 }
@@ -191,27 +205,24 @@ func (tunnel *FileWriter) ParsedLogsRequired() bool {
 }
 
 func (tunnel *FileWriter) Prepare() bool {
-	//read := time.After(time.Second * 10) //xqw_time
-	//tunnel.Local = "data" + strconv.FormatInt(time.Now().Unix(),10)
+	tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
 	tunnel.PrepareOld()
-	//
-	////<-read
-	//time.Sleep(time.Second * 10)
 
 	if atomic.CompareAndSwapInt32(&globalInitializerFile, 0, 1) {
 		go tunnel.StartNext(tunnel.Local)
 	}
 	return true
 }
+
 func (tunnel *FileWriter) StartNext(lastFile string) {
 	for {
 		select {
-		case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //xqw_time
+		case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
 			tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
 			tunnel.replaceNewFile()
 
 			if er := os.Rename(lastFile, conf.Options.CopyLogFilePath+"/"+lastFile); er != nil {
-				LOG.Critical("copy fail name : d%", lastFile)
+				LOG.Critical("copy fail name : %s", lastFile)
 				print(er)
 			}
 		}

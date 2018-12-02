@@ -180,27 +180,9 @@ func (cw *CommandWriter) doCommand(database string, metadata bson.M, oplogs []*O
 	for _, log := range oplogs {
 		operation, found := extraCommandName(log.original.partialLog.Object)
 		if !conf.Options.ReplayerDMLOnly || (found && isSyncDataCommand(operation)) {
-			var logs []*oplog.PartialLog
-			if array, ok := log.original.partialLog.Object["applyOps"].([]interface{}); ok {
-				logs = make([]*oplog.PartialLog, len(array), len(array))
-				for i, ary := range array {
-					if applyOps, ok := ary.(bson.M); ok {
-						logs[i] = &oplog.PartialLog{
-							Timestamp: log.original.partialLog.Timestamp,
-							Operation: applyOps["op"].(string),
-							Namespace: applyOps["ns"].(string),
-							Object:    applyOps["o"].(bson.M),
-						}
-						if o2, ok := applyOps["o2"].(bson.M); ok {
-							logs[i].Query = o2
-						}
-					}
-				}
-			} else {
-				logs = []*oplog.PartialLog{log.original.partialLog}
-			}
 			// execute one by one with sequence order
-			if err = cw.applyOps(database, metadata, logs); err == nil {
+			if err = cw.applyOps(database, metadata, []*oplog.PartialLog{log.original.
+				partialLog}); err == nil {
 				LOG.Info("Execute command (op==c) oplog dml_only mode [%t], operation [%s]", conf.Options.ReplayerDMLOnly, operation)
 			} else {
 				return err
@@ -211,7 +193,6 @@ func (cw *CommandWriter) doCommand(database string, metadata bson.M, oplogs []*O
 	}
 	return nil
 }
-
 func (cw *CommandWriter) applyOps(database string, metadata bson.M, oplogs []*oplog.PartialLog) error {
 	type Result struct {
 		OK int `bson:"ok"`

@@ -99,26 +99,6 @@ func startup() {
 	}
 }
 
-//func startup() {
-//	go func() {
-//		for {
-//			read := time.After(time.Second * 5) //xqw_time
-//			filepath.Walk(conf.Options.TunnelAddress[0], func(path string, f os.FileInfo, err error) error {
-//				if (f == nil) {
-//					return err
-//				}
-//				if f.IsDir() {
-//					return nil
-//				}
-//				startupOld(path)
-//				return nil
-//			})
-//			LOG.Info("File read")
-//			<-read
-//		}
-//	}()
-//}
-
 // this is the main connector function
 func startupOld(filepath string) {
 	factory := tunnel.ReaderFactory{Name: conf.Options.Tunnel}
