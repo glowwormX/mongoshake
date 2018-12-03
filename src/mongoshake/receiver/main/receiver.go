@@ -25,9 +25,9 @@ func main() {
 	//./bin/receiver -conf=conf/receiver.conf
 	// argument options
 	configuration := flag.String("conf", "", "configure file absolute path")
-	//if(*configuration == "") {
-	//	*configuration = "/home/hlkj/go/conf/receiver.conf"
-	//}
+	if *configuration == "" {
+		*configuration = "/home/hlkj/go/conf/receiver.conf"
+	}
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	flag.Parse()
 
@@ -119,7 +119,6 @@ func startupOld(filepath string) {
 		repList[i] = replayer.NewExampleReplayer(uint32(i))
 	}
 
-	LOG.Info("receiver is starting...")
 	if err := reader.Link(repList); err != nil {
 		LOG.Critical("Replayer link to tunnel error %v", err)
 		return

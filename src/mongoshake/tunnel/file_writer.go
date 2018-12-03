@@ -215,18 +215,16 @@ func (tunnel *FileWriter) Prepare() bool {
 }
 
 func (tunnel *FileWriter) StartNext(lastFile string) {
-	for {
-		select {
-		case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
-			tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
-			tunnel.replaceNewFile()
+	select {
+	case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
+		tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
+		tunnel.replaceNewFile()
 
-			if er := os.Rename(lastFile, conf.Options.CopyLogFilePath+"/"+lastFile); er != nil {
-				LOG.Critical("copy fail name : %s", lastFile)
-				print(er)
-			}
+		if er := os.Rename(lastFile, conf.Options.CopyLogFilePath+"/"+lastFile); er != nil {
+			LOG.Critical("copy failed, name : %s", lastFile)
+			print(er)
 		}
-		tunnel.StartNext(tunnel.Local)
 	}
+	go tunnel.StartNext(tunnel.Local)
 
 }
