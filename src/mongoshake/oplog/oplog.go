@@ -2,6 +2,8 @@ package oplog
 
 import (
 	"github.com/vinllen/mgo/bson"
+
+	LOG "github.com/vinllen/log4go"
 )
 
 type GenericOplog struct {
@@ -41,6 +43,7 @@ func LogParsed(logs []*GenericOplog) []*PartialLog {
 	parsedLogs := make([]*PartialLog, len(logs), len(logs))
 	for i, log := range logs {
 		parsedLogs[i] = log.Parsed
+		LOG.Debug("Pased oplog,then send to writer %v", parsedLogs[i])
 	}
 	return parsedLogs
 }

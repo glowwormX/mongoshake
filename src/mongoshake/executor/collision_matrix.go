@@ -40,10 +40,12 @@ func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord
 	records := make([]*OplogRecord, len(segment), len(segment))
 	rlen := 0
 	for _, log := range segment {
-		// nothing to change !
 		if !hasGoTag(log.partialLog.Object) {
 			records[rlen] = &OplogRecord{original: log, wait: nil}
 			rlen++
+			LOG.Debug("do convert has GoTag %v", log.partialLog)
+		} else {
+			LOG.Debug("do convert has not GoTag %v", log.partialLog)
 		}
 	}
 	result := make([]*OplogRecord, rlen, rlen)
@@ -55,7 +57,6 @@ func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord
 }
 
 func hasGoTag(m bson.M) bool {
-	LOG.Debug("Do hasGoTag %v", m)
 	if m["$set"] != nil {
 		set := m["$set"]
 		setMap, ok := set.(bson.M)

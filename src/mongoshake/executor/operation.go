@@ -86,6 +86,7 @@ func (exec *Executor) execute(group *OplogsGroup) error {
 			dc := strings.SplitN(group.ns, ".", 2)
 			for _, log := range group.oplogRecords {
 				setGoTag(log.original.partialLog.Object)
+				LOG.Debug("after setGoTag,then write db %v", log.original.partialLog)
 			}
 
 			switch group.op {
@@ -145,7 +146,6 @@ func setGoTag(m bson.M) {
 	} else {
 		m["__go"] = strconv.FormatInt(time.Now().UnixNano(), 16)
 	}
-	LOG.Debug("Do setGoTag %v", m)
 }
 
 func (exec *Executor) errorIgnore(err error) bool {
