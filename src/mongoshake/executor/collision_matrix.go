@@ -55,6 +55,7 @@ func (noop *NoopMatrix) convert(segment []*PartialLogWithCallbak) []*OplogRecord
 }
 
 func hasGoTag(m bson.M) bool {
+	LOG.Debug("Do hasGoTag %v", m)
 	if m["$set"] != nil {
 		set := m["$set"]
 		setMap, ok := set.(bson.M)

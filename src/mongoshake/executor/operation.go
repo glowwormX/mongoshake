@@ -145,6 +145,7 @@ func setGoTag(m bson.M) {
 	} else {
 		m["__go"] = strconv.FormatInt(time.Now().UnixNano(), 16)
 	}
+	LOG.Debug("Do setGoTag %v", m)
 }
 
 func (exec *Executor) errorIgnore(err error) bool {

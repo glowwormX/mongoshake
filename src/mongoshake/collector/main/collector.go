@@ -32,9 +32,9 @@ func main() {
 	//./bin/collector -conf=conf/collector.conf
 	// argument options
 	configuration := flag.String("conf", "", "configure file absolute path")
-	if *configuration == "" {
-		*configuration = "/home/hlkj/go/conf/collector.conf"
-	}
+	//if *configuration == "" {
+	//	*configuration = "/home/hlkj/go/conf/collector.conf"
+	//}
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()

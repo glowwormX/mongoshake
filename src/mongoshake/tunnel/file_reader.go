@@ -32,7 +32,7 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 	go func() {
 		for {
 			read := time.After(time.Second * time.Duration(conf.Options.ReadLogFileTime)) //xqw_time
-			LOG.Debug("Start reading file" + tunnel.File)
+			LOG.Debug("Start reading file :" + tunnel.File)
 			filepath.Walk(tunnel.File, func(path string, f os.FileInfo, err error) error {
 				if f == nil {
 					return err
@@ -45,35 +45,16 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 				var er error
 				if file, er = os.Open(path); er != nil {
 					LOG.Critical("File tunnel reader open %s failed, %v", tunnel.File, err)
-					return er
 				}
 				dataFile := &DataFile{filehandle: file}
 
 				if fileHeader := dataFile.ReadHeader(); fileHeader.Magic != FILE_MAGIC_NUMBER || fileHeader.Protocol != FILE_PROTOCOL_NUMBER {
 					LOG.Critical("File is not belong to mongoshake. magic header or protocol header is invalid")
-					// check
-					//if _, err := os.Stat(path); err == nil {
-					//	fmt.Println("path exists 1", path)
-					//} else {
-					//	fmt.Println("path not exists ", path)
-					//	err := os.MkdirAll(path, 0711)
-					//
-					//	if err != nil {
-					//		log.Println("Error creating directory")
-					//		log.Println(err)
-					//	}
-					//}
-					//if er := os.Rename(path, "error/"+path); er != nil {
-					//	LOG.Critical("copy fail name : %s", path)
-					//	print(er)
-					//}
+
 					return errors.New("file magic number or protocol number is invalid")
 				}
 
 				go tunnel.read(dataFile.filehandle)
-
-				os.RemoveAll(path)
-				LOG.Debug("File read complete, delete " + path)
 
 				return nil
 			})
@@ -111,8 +92,8 @@ func (tunnel *FileReader) consume(pipe <-chan *TMessage) {
 }
 
 func (tunnel *FileReader) read(filehandle *os.File) {
-	defer close(filehandle)
-	//defer os.RemoveAll(filehandle.)
+	defer closeFile(filehandle)
+	defer deleteFile(filehandle)
 
 	bufferedReader := filehandle
 	bits := make([]byte, 4, 4)
@@ -177,7 +158,12 @@ func (tunnel *FileReader) read(filehandle *os.File) {
 
 }
 
-func close(filehandle *os.File) error {
+func deleteFile(filehandle *os.File) error {
+	LOG.Debug("File read complete, delete " + filehandle.Name())
+	return os.RemoveAll(filehandle.Name())
+}
+
+func closeFile(filehandle *os.File) error {
 	LOG.Debug("close file" + filehandle.Name())
 	return filehandle.Close()
 }
