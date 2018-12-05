@@ -7,6 +7,9 @@ import (
 
 	"mongoshake/common"
 	"mongoshake/oplog"
+
+	LOG "github.com/vinllen/log4go"
+	"github.com/vinllen/mgo/bson"
 )
 
 var NsShouldBeIgnore = [...]string{
@@ -41,7 +44,27 @@ type GidFilter struct {
 
 func (filter *GidFilter) Filter(log *oplog.PartialLog) bool {
 	// filter OplogGlobalId from others
-	return len(filter.Gid) != 0 && log.Gid != filter.Gid
+	//return len(filter.Gid) != 0 && log.Gid != filter.Gid
+	LOG.Debug("do Filter.hasGoTag %v", log)
+	return filter.hasGoTag(log.Object)
+}
+
+func (filter *GidFilter) hasGoTag(m bson.M) bool {
+	//TODO Not sure if you need to check more
+	//Write tags in operations: i,u,applyOps  func setGoTag
+	//Check if there is a __go tag in the log or if there is no tag in the set
+	if m["$set"] != nil {
+		set := m["$set"]
+		setMap, ok := set.(bson.M)
+		if ok {
+			return filter.hasGoTag(setMap)
+		}
+	} else {
+		if m["__go"] != nil {
+			return true
+		}
+	}
+	return false
 }
 
 type AutologousFilter struct {
@@ -51,6 +74,7 @@ func (filter *AutologousFilter) Filter(log *oplog.PartialLog) bool {
 	// for namespace. we filter noop operation and collection name
 	// that are admin, local, mongoshake, mongoshake_conflict
 	if strings.HasPrefix(log.Namespace, "admin.$cmd") && log.Object["applyOps"] != nil {
+		LOG.Debug("ns:admin.$cmd applyOps op:oplog don't filter log: %v", log)
 		return false
 	}
 	for _, ignorePrefix := range NsShouldBeIgnore {

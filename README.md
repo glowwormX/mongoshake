@@ -1,3 +1,10 @@
+*  aliyun/mongo-shake的一个开源项目，一个通过拉取操作日志数据同步工具，但是无法双向同步
+没有修改mongoDb内核的情况下，双向同步会循环写入
+*  修改 部分代码在通过mongoshake写入时会向collection多插入一个字段(__go)以避免循环写入
+*  修改 通过文件通道的逻辑，writer每隔一定时间将日志move到另一个目录，reader定时读取文件
+*  对事物产生的日志(ns:admin$cmd,o:applyOps...)不进行过滤，接受后将applyOps拆分为多个独立操作
+
+
 This is a brief introduction of Mongo-Shake, please visit [english wiki](https://github.com/aliyun/mongo-shake/wiki/MongoShake-Detailed-Documentation) or [chinese wiki](https://yq.aliyun.com/articles/603329) if you want to see more details including architecture, data flow, performance test, business showcase and so on.
 
 *  [English document](https://github.com/aliyun/mongo-shake/wiki/MongoShake-Detailed-Documentation)

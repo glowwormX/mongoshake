@@ -601,6 +601,7 @@ func (sw *SingleWriter) applyOps(database, operation string, log *oplog.PartialL
 						dc := strings.SplitN(s, ".", 2)
 						setGoTag(ms)
 						log := &oplog.PartialLog{
+							Timestamp: log.Timestamp,
 							Operation: applyOps["op"].(string),
 							Namespace: applyOps["ns"].(string),
 							Object:    applyOps["o"].(bson.M),

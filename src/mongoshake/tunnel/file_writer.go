@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -200,7 +201,7 @@ func (tunnel *FileWriter) ParsedLogsRequired() bool {
 }
 
 func (tunnel *FileWriter) Prepare() bool {
-	tunnel.Local = conf.Options.TunnelAddress[0] + strconv.FormatInt(time.Now().Unix(), 10)
+	tunnel.Local = strconv.FormatInt(time.Now().Unix(), 10) + conf.Options.TunnelAddress[0]
 	tunnel.PrepareOld()
 
 	if atomic.CompareAndSwapInt32(&globalInitializerFile, 0, 1) {
@@ -214,11 +215,27 @@ func (tunnel *FileWriter) StartNext(lastFile string) {
 	case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
 		tunnel.Local = strconv.FormatInt(time.Now().Unix(), 10) + conf.Options.TunnelAddress[0]
 		tunnel.replaceNewFile()
-
-		if er := os.Rename(lastFile, conf.Options.CopyLogFilePath+"/"+lastFile); er != nil {
-			LOG.Critical("copy failed, name : %s", lastFile)
-		}
+		moveToOtherDir(lastFile, conf.Options.CopyLogFilePath+"/")
 	}
 	go tunnel.StartNext(tunnel.Local)
 
+}
+
+func moveToOtherDir(path string, dir string) {
+	var dirM, fileName string
+	pos := strings.LastIndex(path, "/")
+	if pos == -1 {
+		dirM = dir
+		fileName = path
+	} else {
+		dirM = path[0:pos] + dir
+		fileName = path[pos+1:]
+	}
+	if er := os.Rename(path, dirM+fileName); er != nil {
+		if err := os.MkdirAll(dirM, 0711); err == nil {
+			if er := os.Rename(path, dirM+fileName); er != nil {
+				LOG.Critical("file moved failed, name : %s", path)
+			}
+		}
+	}
 }

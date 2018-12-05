@@ -18,16 +18,6 @@ import (
 type Exit struct{ Code int }
 
 func main() {
-	//path := "receiver/1543844453mongo.log"
-	//
-	//if er := os.Rename(path, "error1/" + path); er != nil {
-	//	if err := os.MkdirAll("error1/receiver", 0711); err == nil{
-	//		if er := os.Rename(path, "error1/" + path); er != nil {
-	//			LOG.Critical("copy fail name : %s", path)
-	//		}
-	//	}
-	//}
-
 	var err error
 	defer handleExit()
 	defer LOG.Close()
@@ -99,7 +89,7 @@ func startup() {
 	 */
 	repList := make([]tunnel.Replayer, conf.Options.ReplayerNum)
 	for i := range repList {
-		repList[i] = replayer.NewExampleReplayer(0)
+		repList[i] = replayer.NewExampleReplayer(uint32(i))
 	}
 
 	LOG.Info("receiver is starting...")
