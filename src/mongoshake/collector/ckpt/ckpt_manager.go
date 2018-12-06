@@ -140,6 +140,13 @@ func (ckpt *MongoCheckpoint) Get() *CheckpointContext {
 
 	var err error
 	value := new(CheckpointContext)
+	if conf.Options.ContextStartUseLocal {
+		ckpt.StartPosition = int64(math.Max(float64(ckpt.StartPosition), 1))
+		value.Name = ckpt.Name
+		value.Timestamp = bson.MongoTimestamp(ckpt.StartPosition << 32)
+		LOG.Info("Regenerate checkpoint but won't insert. content %v", value)
+		return value
+	}
 	if err = ckpt.QueryHandle.Find(bson.M{CheckpointName: ckpt.Name}).One(value); err == nil {
 		LOG.Info("Load exist checkpoint. content %v", value)
 		return value

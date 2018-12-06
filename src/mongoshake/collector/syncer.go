@@ -92,15 +92,17 @@ func NewOplogSyncer(
 	}
 
 	filterList := OplogFilterChain{new(AutologousFilter), new(NoopFilter)}
-
+	//if gid != "" {
+	//	filterList = append(filterList, &GidFilter{Gid: gid})
+	//}
 	if len(conf.Options.FilterNamespaceWhite) != 0 || len(conf.Options.FilterNamespaceBlack) != 0 {
 		namespaceFilter := NewNamespaceFilter(conf.Options.FilterNamespaceWhite,
 			conf.Options.FilterNamespaceBlack)
 		filterList = append(filterList, namespaceFilter)
 	}
-	//if gid != "" {
-	filterList = append(filterList, &GidFilter{Gid: gid})
-	//}
+	if conf.Options.FilterGoTag {
+		filterList = append(filterList, &GidFilter{Gid: gid})
+	}
 
 	// oplog filters. drop the oplog if any of the filter
 	// list returns true. The order of all filters is not significant

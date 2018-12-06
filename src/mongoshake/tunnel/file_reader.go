@@ -26,7 +26,7 @@ type FileInfoList []os.FileInfo
 func (fs FileInfoList) Len() int { return len(fs) }
 
 func (fs FileInfoList) Less(i, j int) bool {
-	return fs[i].Name() > fs[j].Name()
+	return fs[i].Name() < fs[j].Name()
 }
 
 func (fs FileInfoList) Swap(i, j int) { fs[i], fs[j] = fs[j], fs[i] }
@@ -103,7 +103,7 @@ func (tunnel *FileReader) consume(pipe <-chan *TMessage) {
 
 func (tunnel *FileReader) read(filehandle *os.File) {
 	defer closeFile(filehandle)
-	defer deleteFile(filehandle)
+	deleteFile(filehandle)
 
 	bufferedReader := filehandle
 	bits := make([]byte, 4, 4)
