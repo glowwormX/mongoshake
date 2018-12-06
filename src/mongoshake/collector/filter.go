@@ -1,12 +1,14 @@
 package collector
 
 import (
-	"strings"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"mongoshake/common"
 	"mongoshake/oplog"
+
+	LOG "github.com/vinllen/log4go"
 )
 
 var NsShouldBeIgnore = [...]string{
@@ -27,6 +29,7 @@ type OplogFilter interface {
 type OplogFilterChain []OplogFilter
 
 func (chain OplogFilterChain) IterateFilter(log *oplog.PartialLog) bool {
+	LOG.Debug("do filter : %v", log)
 	for _, filter := range chain {
 		if filter.Filter(log) {
 			return true
