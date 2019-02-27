@@ -144,7 +144,7 @@ func (ckpt *MongoCheckpoint) Get() *CheckpointContext {
 		ckpt.StartPosition = int64(math.Max(float64(ckpt.StartPosition), 1))
 		value.Name = ckpt.Name
 		value.Timestamp = bson.MongoTimestamp(ckpt.StartPosition << 32)
-		LOG.Info("Regenerate checkpoint but won't insert. content %v", value)
+		LOG.Info("use local checkpoint. content %v", value)
 		return value
 	}
 	if err = ckpt.QueryHandle.Find(bson.M{CheckpointName: ckpt.Name}).One(value); err == nil {

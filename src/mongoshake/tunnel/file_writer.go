@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -205,20 +206,53 @@ func (tunnel *FileWriter) Prepare() bool {
 	tunnel.PrepareOld()
 
 	if atomic.CompareAndSwapInt32(&globalInitializerFile, 0, 1) {
-		go tunnel.StartNext(tunnel.Local)
+		go tunnel.StartNext(tunnel.Local, "")
 	}
 	return true
 }
 
-func (tunnel *FileWriter) StartNext(lastFile string) {
-	select {
-	case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
-		tunnel.Local = strconv.FormatInt(time.Now().Unix(), 10) + conf.Options.TunnelAddress[0]
+func (tunnel *FileWriter) StartNext(lastFile string, lastDir string) {
+	if conf.Options.CopyLogFileTime > 0 {
+		select {
+		case <-time.Tick(time.Second * time.Duration(conf.Options.CopyLogFileTime)): //copy time
+			tunnel.Local = strconv.FormatInt(time.Now().Unix(), 10) + conf.Options.TunnelAddress[0]
+			tunnel.replaceNewFile()
+			moveToOtherDir(lastFile, conf.Options.CopyLogFilePath+"/")
+		}
+		go tunnel.StartNext(tunnel.Local, "")
+	} else {
+		bakDir := time.Now().Format("2006-01-02T15:04:05")
+		tunnel.Local = bakDir + conf.Options.TunnelAddress[0]
 		tunnel.replaceNewFile()
-		moveToOtherDir(lastFile, conf.Options.CopyLogFilePath+"/")
-	}
-	go tunnel.StartNext(tunnel.Local)
+		mongodump(bakDir)
+		moveToOtherDir(lastFile, conf.Options.CopyLogFilePath+"/"+lastDir+"/")
 
+		now := time.Now()
+		// 计算下一个零点
+		//next := now.Add(time.Minute * 1)
+		//next = time.Date(next.Year(), next.Month(), next.Day(), next.Hour(), next.Minute(), 0, 0, next.Location())
+		next := now.Add(time.Hour * 24)
+		next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+		t := time.NewTimer(next.Sub(now))
+		LOG.Info("mongodump next time, %s", next.Format("2006-01-02T15:04:05"))
+		<-t.C
+		go tunnel.StartNext(tunnel.Local, bakDir)
+	}
+}
+
+func mongodump(bakDir string) {
+	var err error
+	var cmd *exec.Cmd
+
+	// 执行单个shell命令时, 直接运行即可
+	//var dump = "/usr/local/software/mongodb/bin/mongodump -h 192.168.1.78 --port 2001 -d mbxt -o /home/hlkj/Documents/mongobak/test"
+	var dump = conf.Options.MongoDumpCmd + bakDir
+	cmd = exec.Command("/bin/sh", "-c", dump)
+	if _, err = cmd.Output(); err != nil {
+		LOG.Critical("mongodump failed,err: %v", err)
+	} else {
+		LOG.Info("mongodump success,cmd: %s", dump)
+	}
 }
 
 func moveToOtherDir(path string, dir string) {

@@ -42,6 +42,7 @@ type Configuration struct {
 	CopyLogFileTime uint   `config:"tunnel.file.copy.time"`
 	CopyLogFilePath string `config:"tunnel.file.copy.path"`
 	ReadLogFileTime uint   `config:"tunnel.writer.file.read.time"`
+	MongoDumpCmd    string `config:"mongo.dump.cmd"`
 }
 
 func (configuration *Configuration) IsShardCluster() bool {
