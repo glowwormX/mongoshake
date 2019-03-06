@@ -10,8 +10,8 @@ import (
 	"mongoshake/oplog"
 	"mongoshake/quorum"
 
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo/bson"
 )
 
@@ -92,13 +92,16 @@ func NewOplogSyncer(
 	}
 
 	filterList := OplogFilterChain{new(AutologousFilter), new(NoopFilter)}
-	if gid != "" {
-		filterList = append(filterList, &GidFilter{Gid: gid})
-	}
+	//if gid != "" {
+	//	filterList = append(filterList, &GidFilter{Gid: gid})
+	//}
 	if len(conf.Options.FilterNamespaceWhite) != 0 || len(conf.Options.FilterNamespaceBlack) != 0 {
 		namespaceFilter := NewNamespaceFilter(conf.Options.FilterNamespaceWhite,
 			conf.Options.FilterNamespaceBlack)
 		filterList = append(filterList, namespaceFilter)
+	}
+	if conf.Options.FilterGoTag {
+		filterList = append(filterList, &GidFilter{Gid: gid})
 	}
 
 	// oplog filters. drop the oplog if any of the filter
@@ -154,7 +157,6 @@ func (sync *OplogSyncer) start() {
 
 func (sync *OplogSyncer) startBatcher() {
 	var batcher = sync.batcher
-
 	nimo.GoRoutineInLoop(func() {
 		// As much as we can batch more from logs queue. batcher can merge
 		// a sort of oplogs from different logs queue one by one. the max number

@@ -5,12 +5,12 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"mongoshake/collector/configure"
+	"mongoshake/collector/configure" //xqw_write
 	"mongoshake/common"
 	"mongoshake/oplog"
 
-	LOG "github.com/vinllen/log4go"
 	"github.com/gugemichael/nimo4go"
+	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo"
 )
 
@@ -24,12 +24,12 @@ const (
 	OpInsert = 0x01
 	OpUpdate = 0x02
 
-	OplogsMaxGroupNum       = 1000
-	OplogsMaxGroupSize      = 12 * 1024 * 1024 // MongoDB limits 16MB
+	OplogsMaxGroupNum  = 1000
+	OplogsMaxGroupSize = 12 * 1024 * 1024 // MongoDB limits 16MB
 )
 
 var (
-	GlobalExecutorId int32 = -1
+	GlobalExecutorId int32  = -1
 	ThresholdVersion string = "3.2.0"
 )
 
@@ -61,6 +61,7 @@ func (batchExecutor *BatchGroupExecutor) Start() {
 	batchExecutor.executors = executors
 }
 
+//TODO 用该方法
 func (batchExecutor *BatchGroupExecutor) Sync(rawLogs []*oplog.PartialLog, callback func()) {
 	count := uint64(len(rawLogs))
 	if count == 0 {

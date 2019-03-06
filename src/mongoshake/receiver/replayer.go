@@ -1,10 +1,11 @@
 package replayer
 
-import(
-	"mongoshake/tunnel"
+import (
+	"mongoshake/collector/configure"
+	"mongoshake/common"
 	"mongoshake/modules"
 	"mongoshake/oplog"
-	"mongoshake/common"
+	"mongoshake/tunnel"
 
 	LOG "github.com/vinllen/log4go"
 	"github.com/vinllen/mgo/bson"
@@ -24,6 +25,8 @@ type ExampleReplayer struct {
 
 	// pending queue, use to pass message
 	pendingQueue chan *MessageWithCallback
+
+	writer tunnel.Writer
 }
 
 type MessageWithCallback struct {
@@ -31,11 +34,24 @@ type MessageWithCallback struct {
 	completion func()
 }
 
-func NewExampleReplayer() *ExampleReplayer {
+func NewExampleReplayer(workerId uint32) *ExampleReplayer {
 	LOG.Info("ExampleReplayer start. pending queue capacity %d", PendingQueueCapacity)
-	er := &ExampleReplayer {
+	er := &ExampleReplayer{
 		pendingQueue: make(chan *MessageWithCallback, PendingQueueCapacity),
 	}
+	factory := tunnel.WriterFactory{Name: conf.Options.TunnelWriter}
+	//factory := tunnel.WriterFactory{Name: "direct"}
+
+	directWriter := factory.Create(conf.Options.TunnelAddressWriter, workerId)
+	//var str1 = []string{"mongodb://127.0.0.1:27017"}
+	//directWriter := factory.Create(str1, 0)
+	if directWriter != nil {
+		if directWriter.Prepare() {
+			LOG.Info("directWriter prepare success %d", workerId)
+		}
+	}
+	er.writer = directWriter
+
 	go er.handler()
 	return er
 }
@@ -123,13 +139,18 @@ func (er *ExampleReplayer) handler() {
 			LOG.Info(oplogs[i]) // just print for test
 		}
 
+		message := &tunnel.WMessage{
+			ParsedLogs: oplogs,
+		}
+		er.writer.Send(message)
+
 		if callback := msg.completion; callback != nil {
 			callback() // exec callback
 		}
 
 		// get the newest timestamp
 		n := len(oplogs)
-		lastTs := utils.TimestampToInt64(oplogs[n - 1].Timestamp)
+		lastTs := utils.TimestampToInt64(oplogs[n-1].Timestamp)
 		er.Ack = lastTs
 
 		// add logical code below

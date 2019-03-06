@@ -3,11 +3,14 @@ package tunnel
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
-	"io"
-	"os"
-
 	LOG "github.com/vinllen/log4go"
+	"io"
+	"io/ioutil"
+	"os"
+	"sort"
+	"time"
+
+	"mongoshake/collector/configure"
 )
 
 type FileReader struct {
@@ -18,6 +21,16 @@ type FileReader struct {
 	replayers []Replayer
 }
 
+type FileInfoList []os.FileInfo
+
+func (fs FileInfoList) Len() int { return len(fs) }
+
+func (fs FileInfoList) Less(i, j int) bool {
+	return fs[i].Name() < fs[j].Name()
+}
+
+func (fs FileInfoList) Swap(i, j int) { fs[i], fs[j] = fs[j], fs[i] }
+
 func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 	tunnel.replayers = relativeReplayer
 	tunnel.pipe = make([]chan *TMessage, 0)
@@ -26,21 +39,38 @@ func (tunnel *FileReader) Link(relativeReplayer []Replayer) error {
 		tunnel.pipe = append(tunnel.pipe, ch)
 		go tunnel.consume(ch)
 	}
+	go func() {
+		for {
+			read := time.After(time.Second * time.Duration(conf.Options.ReadLogFileTime)) //read time
+			LOG.Debug("Start reading file :" + tunnel.File)
+			if files, er := ioutil.ReadDir(tunnel.File); er == nil {
+				var fs FileInfoList = files
+				sort.Sort(fs)
+				for _, f := range files {
+					if f == nil {
+						continue
+					}
+					if f.IsDir() {
+						continue
+					}
+					var file *os.File
+					var er error
+					if file, er = os.Open(tunnel.File + "/" + f.Name()); er != nil {
+						LOG.Critical("File tunnel reader open %s failed, %v", tunnel.File, er)
+					}
+					dataFile := &DataFile{filehandle: file}
 
-	var file *os.File
-	var err error
-	if file, err = os.Open(tunnel.File); err != nil {
-		LOG.Critical("File tunnel reader open %s failed, %v", tunnel.File, err)
-		return err
-	}
-	tunnel.dataFile = &DataFile{filehandle: file}
-
-	if fileHeader := tunnel.dataFile.ReadHeader(); fileHeader.Magic != FILE_MAGIC_NUMBER || fileHeader.Protocol != FILE_PROTOCOL_NUMBER {
-		LOG.Critical("File is not belong to mongoshake. magic header or protocol header is invalid")
-		return errors.New("file magic number or protocol number is invalid")
-	}
-
-	go tunnel.read()
+					if fileHeader := dataFile.ReadHeader(); fileHeader.Magic != FILE_MAGIC_NUMBER || fileHeader.Protocol != FILE_PROTOCOL_NUMBER {
+						LOG.Critical("File is not belong to mongoshake. magic header or protocol header is invalid")
+						moveToOtherDir(tunnel.File+"/"+f.Name(), "/error/")
+						continue
+					}
+					tunnel.read(dataFile.filehandle)
+				}
+			}
+			<-read
+		}
+	}()
 
 	return nil
 }
@@ -71,10 +101,11 @@ func (tunnel *FileReader) consume(pipe <-chan *TMessage) {
 	}
 }
 
-func (tunnel *FileReader) read() {
-	defer tunnel.dataFile.filehandle.Close()
+func (tunnel *FileReader) read(filehandle *os.File) {
+	defer closeFile(filehandle)
+	deleteFile(filehandle)
 
-	bufferedReader := tunnel.dataFile.filehandle
+	bufferedReader := filehandle
 	bits := make([]byte, 4, 4)
 	totalLogs := 0
 	for {
@@ -134,4 +165,15 @@ func (tunnel *FileReader) read() {
 		LOG.Info("File tunnel reader extract oplogs with shard[%d], compressor[%d], count (%d)", message.Shard, message.Compress, len(message.RawLogs))
 	}
 	LOG.Info("File tunnel reader complete. total oplogs %d", totalLogs)
+
+}
+
+func deleteFile(filehandle *os.File) error {
+	LOG.Debug("File read complete, delete " + filehandle.Name())
+	return os.RemoveAll(filehandle.Name())
+}
+
+func closeFile(filehandle *os.File) error {
+	LOG.Debug("close file" + filehandle.Name())
+	return filehandle.Close()
 }

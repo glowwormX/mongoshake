@@ -29,11 +29,12 @@ func main() {
 	defer LOG.Close()
 	defer utils.Goodbye()
 
+	//./bin/collector -conf=conf/collector.conf
 	// argument options
 	configuration := flag.String("conf", "", "configure file absolute path")
-	if *configuration == "" {
-		*configuration = "/home/hlkj/go/conf/collector.conf"
-	}
+	//if *configuration == "" {
+	//	*configuration = "/home/hlkj/go/conf/collector.conf"
+	//}
 	verbose := flag.Bool("verbose", false, "show logs on console")
 	version := flag.Bool("version", false, "show version")
 	flag.Parse()
@@ -78,7 +79,7 @@ func main() {
 }
 
 func startup() {
-	// leader election at the beginning
+	// leader election at the beginningr
 	selectLeader()
 
 	// initialize http api

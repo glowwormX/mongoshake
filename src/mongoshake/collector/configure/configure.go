@@ -10,6 +10,7 @@ type Configuration struct {
 	LogFileName            string   `config:"log_file"`
 	LogBuffer              bool     `config:"log_buffer"`
 	OplogGIDS              string   `config:"oplog.gids"`
+	FilterGoTag            bool     `config:"oplog.filter_gotag"`
 	ShardKey               string   `config:"shard_key"`
 	SyncerReaderBufferTime uint     `config:"syncer.reader.buffer_time"`
 	WorkerNum              int      `config:"worker"`
@@ -22,6 +23,7 @@ type Configuration struct {
 	ContextStorageUrl      string   `config:"context.storage.url"`
 	ContextAddress         string   `config:"context.address"`
 	ContextStartPosition   int64    `config:"context.start_position" type:"date"`
+	ContextStartUseLocal   bool     `config:"context.start_use_local"`
 	FilterNamespaceBlack   []string `config:"filter.namespace.black"`
 	FilterNamespaceWhite   []string `config:"filter.namespace.white"`
 
@@ -32,6 +34,15 @@ type Configuration struct {
 	ReplayerCollisionEnable           bool   `config:"replayer.collision_detection"`
 	ReplayerConflictWriteTo           string `config:"replayer.conflict_write_to"`
 	ReplayerDurable                   bool   `config:"replayer.durable"`
+
+	ReplayerNum         int      `config:"replayer"`
+	TunnelWriter        string   `config:"tunnel.writer"`
+	TunnelAddressWriter []string `config:"tunnel.writer.address"`
+
+	CopyLogFileTime uint   `config:"tunnel.file.copy.time"`
+	CopyLogFilePath string `config:"tunnel.file.copy.path"`
+	ReadLogFileTime uint   `config:"tunnel.writer.file.read.time"`
+	MongoDumpCmd    string `config:"mongo.dump.cmd"`
 }
 
 func (configuration *Configuration) IsShardCluster() bool {
