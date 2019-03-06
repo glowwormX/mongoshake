@@ -23,6 +23,7 @@ type Configuration struct {
 	ContextStorageUrl      string   `config:"context.storage.url"`
 	ContextAddress         string   `config:"context.address"`
 	ContextStartPosition   int64    `config:"context.start_position" type:"date"`
+	ContextEndPosition     int64    `config:"context.end_position" type:"date"`
 	ContextStartUseLocal   bool     `config:"context.start_use_local"`
 	FilterNamespaceBlack   []string `config:"filter.namespace.black"`
 	FilterNamespaceWhite   []string `config:"filter.namespace.white"`

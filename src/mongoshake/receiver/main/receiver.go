@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/gugemichael/nimo4go"
 	LOG "github.com/vinllen/log4go"
+	"math"
 	"mongoshake/collector/configure"
 	"mongoshake/common"
 	"mongoshake/receiver"
@@ -59,6 +60,9 @@ func main() {
 		LOG.Info(string(bytes))
 	})
 
+	fmt.Print(conf.Options.ContextEndPosition)
+	conf.Options.ContextEndPosition = int64(math.Max(float64(conf.Options.ContextEndPosition), 1)) << 32
+	fmt.Print(conf.Options.ContextEndPosition)
 	startup()
 
 	select {}

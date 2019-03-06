@@ -129,7 +129,6 @@ func (er *ExampleReplayer) handler() {
 			// may be probe request
 			continue
 		}
-
 		// parse batched message
 		oplogs := make([]*oplog.PartialLog, len(msg.message.RawLogs), len(msg.message.RawLogs))
 		for i, raw := range msg.message.RawLogs {
@@ -137,6 +136,9 @@ func (er *ExampleReplayer) handler() {
 			bson.Unmarshal(raw, &oplogs[i])
 			oplogs[i].RawSize = len(raw)
 			LOG.Info(oplogs[i]) // just print for test
+			if int64(oplogs[i].Timestamp) > conf.Options.ContextEndPosition {
+				oplogs[i] = nil
+			}
 		}
 
 		message := &tunnel.WMessage{
