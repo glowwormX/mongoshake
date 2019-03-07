@@ -131,18 +131,23 @@ func (er *ExampleReplayer) handler() {
 		}
 		// parse batched message
 		oplogs := make([]*oplog.PartialLog, len(msg.message.RawLogs), len(msg.message.RawLogs))
-		for i, raw := range msg.message.RawLogs {
-			oplogs[i] = &oplog.PartialLog{}
-			bson.Unmarshal(raw, &oplogs[i])
-			oplogs[i].RawSize = len(raw)
-			LOG.Info(oplogs[i]) // just print for test
-			if int64(oplogs[i].Timestamp) > conf.Options.ContextEndPosition {
-				oplogs[i] = nil
+		//isFilter := false;
+		op_i := 0
+		for _, raw := range msg.message.RawLogs {
+			temp := &oplog.PartialLog{}
+			bson.Unmarshal(raw, &temp)
+			temp.RawSize = len(raw)
+			LOG.Info(temp) // just print for test
+			if conf.Options.ContextEndPosition == 0 || int64(temp.Timestamp) <= conf.Options.ContextEndPosition {
+				oplogs[op_i] = temp
+				op_i++
 			}
 		}
-
+		if op_i == 0 {
+			continue
+		}
 		message := &tunnel.WMessage{
-			ParsedLogs: oplogs,
+			ParsedLogs: oplogs[0:op_i],
 		}
 		er.writer.Send(message)
 

@@ -60,9 +60,9 @@ func main() {
 		LOG.Info(string(bytes))
 	})
 
-	fmt.Print(conf.Options.ContextEndPosition)
-	conf.Options.ContextEndPosition = int64(math.Max(float64(conf.Options.ContextEndPosition), 1)) << 32
-	fmt.Print(conf.Options.ContextEndPosition)
+	if conf.Options.ContextEndPosition != 0 {
+		conf.Options.ContextEndPosition = int64(math.Max(float64(conf.Options.ContextEndPosition), 1)) << 32
+	}
 	startup()
 
 	select {}
