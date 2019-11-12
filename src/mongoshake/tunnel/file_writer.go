@@ -218,7 +218,7 @@ func (tunnel *FileWriter) StartNext(lastFile string, lastDir string) {
 			var info os.FileInfo
 			//有写入日志 或者 1分钟还未写入 将文件同步文件上传
 			if info, _ = tunnel.dataFile.filehandle.Stat(); info.Size() > 264 || time.Now().Unix()-info.ModTime().Unix() > 60 {
-				tunnel.Local = time.Now().Format("01-02T15:04:05") + conf.Options.TunnelAddress[0]
+				tunnel.Local = time.Now().Format("01-02T15-04-05") + conf.Options.TunnelAddress[0]
 				tunnel.replaceNewFile()
 				moveToOtherDir(lastFile, conf.Options.CopyLogFilePath+"/")
 			}
